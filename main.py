@@ -28,8 +28,11 @@ def run_questionnaire(config_file):
 
     q = questionnaire.Questionnaire()
     for question_name, question in questions.items():
-        if question["answer_type"] == constants.AnswerTypes.MULTIPLE_CHOICE:
+        answer_type = question["answer_type"]
+        if answer_type == constants.AnswerTypes.MULTIPLE_CHOICE:
             q.one(question_name, *question["choices"], prompt=question["prompt"])
+        elif answer_type == constants.AnswerTypes.TEXT:
+            q.raw(question_name)
         else:
             raise Exception(f'Invalid answer type {question["answer_type"]}')
     q.run()
