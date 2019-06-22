@@ -27,14 +27,25 @@ def run_questionnaire(config_file):
             raise Exception(f"Invalid section name {section}")
 
     q = questionnaire.Questionnaire()
-    for question_name, question in questions.items():
-        answer_type = question["answer_type"]
+    for question_name, question_options in questions.items():
+        answer_type = question_options["answer_type"]
+        question = None
         if answer_type == constants.AnswerTypes.MULTIPLE_CHOICE:
-            q.one(question_name, *question["choices"], prompt=question["prompt"])
+            question = q.one(question_name, *question_options["choices"], prompt=question_options["prompt"])
         elif answer_type == constants.AnswerTypes.TEXT:
-            q.raw(question_name)
+            question = q.raw(question_name, prompt=question_options["prompt"])
         else:
-            raise Exception(f'Invalid answer type {question["answer_type"]}')
+            raise Exception(f'Invalid answer type {question_options["answer_type"]}')
+
+        if "only" in question_options:
+            tokens = question_options["only"].split(".")
+            question_name = tokens[0]
+            conditional_op = tokens[1]
+            question_value = tokens[2]
+            if conditional_op == constants.ConditionOps.EQUALS:
+                question.condition((question_name, question_value))
+            else:
+                raise Exception(f"Invalid conditional operator {conditional_op}")
     q.run()
     print(q.format_answers())
 
