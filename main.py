@@ -1,6 +1,8 @@
 import argparse
 import collections
 import configparser
+import os
+import platform
 import sys
 
 import pick
@@ -29,6 +31,20 @@ def read_line():
         line += char
         char = sys.stdin.read(1)
     return line
+
+
+def read_todo():
+    i = 1
+    items = []
+    while True:
+        print(f'\n{i}. ', end='')
+        item = read_line()
+        if not item:
+            break
+        done, _ = pick.pick(["yes", "no"], title=f'Is "{item}" complete?')
+        items.append([item, done == "yes"])
+        i += 1
+    return items
 
 
 def run_questionnaire(config_file):
@@ -62,8 +78,16 @@ def run_questionnaire(config_file):
         elif answer_type == constants.AnswerTypes.TEXT:
             print(f"{prompt}:")
             answers[question_name] = read_line()
+        elif answer_type == constants.AnswerTypes.TODO:
+            print(f"{prompt}:")
+            answers[question_name] = read_todo()
         else:
             raise Exception(f'Invalid answer type {question_options["answer_type"]}')
+
+    if platform.system() == 'Linux':
+        os.system('clear')
+    else:
+        os.system('cls')
 
     for question_name, answer in answers.items():
         question_options = questions[question_name]
