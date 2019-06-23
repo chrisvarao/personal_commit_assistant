@@ -1,6 +1,7 @@
 import argparse
 import collections
 import configparser
+import json
 import os
 import platform
 import sys
@@ -37,14 +38,29 @@ def read_todo():
     i = 1
     items = []
     while True:
-        print(f'\n{i}. ', end='')
+        print(f"\n{i}. ", end="")
         item = read_line()
         if not item:
             break
         done, _ = pick.pick(["yes", "no"], title=f'Is "{item}" complete?')
-        items.append([item, done == "yes"])
+        items.append((item, done == "yes"))
         i += 1
     return items
+
+
+def save_todos(questions, answers):
+    file_contents = {}
+    for question_name, question_options in questions.items():
+        if question_options["answer_type"] != constants.AnswerTypes.TODO or question_name not in answers:
+            continue
+        todo_for_key = question_options.get("todo_for", "").format(**answers)
+        todo_group_key = question_options.get("todo_group", "")
+        todo_group = file_contents[todo_group_key] = file_contents.get(todo_group_key, {})
+        todo_for = todo_group[todo_for_key] = todo_group.get(todo_for_key, [])
+        for item in answers[question_name]:
+            todo_for.append(list(item))
+    with open(".todo", "w+") as file:
+        file.write(json.dumps(file_contents))
 
 
 def run_questionnaire(config_file):
@@ -84,10 +100,10 @@ def run_questionnaire(config_file):
         else:
             raise Exception(f'Invalid answer type {question_options["answer_type"]}')
 
-    if platform.system() == 'Linux':
-        os.system('clear')
+    if platform.system() == "Linux":
+        os.system("clear")
     else:
-        os.system('cls')
+        os.system("cls")
 
     for question_name, answer in answers.items():
         question_options = questions[question_name]
@@ -96,6 +112,7 @@ def run_questionnaire(config_file):
         if answer_type == constants.AnswerTypes.MULTIPLE_CHOICE:
             answer = question_options["choices"][answer]
         print(f"    {answer}\n")
+    save_todos(questions, answers)
 
 
 if __name__ == "__main__":
