@@ -6,6 +6,7 @@ name = 'pypi'
 [packages]
 black = "*"
 pick = "*"
+GitPython = "*"
 
 [requires]
 python_version = "3.6"

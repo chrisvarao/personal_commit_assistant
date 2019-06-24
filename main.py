@@ -4,8 +4,10 @@ import configparser
 import json
 import os
 import platform
+import readline
 import sys
 
+import git
 import pick
 
 from assistant import constants
@@ -13,6 +15,39 @@ from assistant import constants
 arg_parser = argparse.ArgumentParser(description="Runs personal commit assistant.")
 arg_parser.add_argument("task", choices=["question"])
 arg_parser.add_argument("--config", "-c", default=".assistant.ini")
+
+
+def setup_directory_for_git_ref():
+    repo = git.Repo(".")
+    branch_name = repo.head.reference.name
+
+    if not os.path.exists(constants.ASSISTANT_STORE_DIR):
+        os.mkdir(constants.ASSISTANT_STORE_DIR)
+
+    branch_dir = f"{constants.ASSISTANT_STORE_DIR}/{branch_name}"
+    if not os.path.exists(branch_dir):
+        os.mkdir(branch_dir)
+
+
+def get_saved_answers():
+    repo = git.Repo(".")
+    branch_name = repo.head.reference.name
+    commit_id = repo.head.reference.commit.hexsha
+    file_for_commit = f"{constants.ASSISTANT_STORE_DIR}/{branch_name}/{commit_id}"
+    try:
+        with open(file_for_commit, "r") as file:
+            return json.JSONDecoder(object_pairs_hook=collections.OrderedDict).decode(file.read() or "{}")
+    except:
+        return collections.OrderedDict()
+
+
+def save_answers(answers):
+    repo = git.Repo(".")
+    branch_name = repo.head.reference.name
+    commit_id = repo.head.reference.commit.hexsha
+    file_for_commit = f"{constants.ASSISTANT_STORE_DIR}/{branch_name}/{commit_id}"
+    with open(file_for_commit, "w+") as file:
+        file.write(json.dumps(answers))
 
 
 def meets_condition(answers, condition):
@@ -26,23 +61,26 @@ def meets_condition(answers, condition):
         raise Exception(f"Invalid conditional operator {conditional_op}")
 
 
-def read_line():
-    line, char = "", sys.stdin.read(1)
-    while not (char == "\n" or char == "\r" or char == ""):
-        line += char
-        char = sys.stdin.read(1)
-    return line
+def read_line(prefill=""):
+    readline.set_startup_hook(lambda: readline.insert_text(prefill))
+    try:
+        return input()
+    finally:
+        readline.set_startup_hook()
 
 
-def read_todo():
+def read_todo(saved_todos=[]):
     i = 1
     items = []
     while True:
         print(f"\n{i}. ", end="")
-        item = read_line()
+        saved_todo = saved_todos[i-1] if i <= len(saved_todos) else ["", True]
+        prefill = saved_todo[0]
+        item = read_line(prefill)
         if not item:
             break
-        done, _ = pick.pick(["yes", "no"], title=f'Is "{item}" complete?')
+        default_index = 0 if saved_todo[1] else 1
+        done, _ = pick.pick(["yes", "no"], default_index=default_index, title=f'Is "{item}" complete?')
         items.append((item, done == "yes"))
         i += 1
     return items
@@ -64,6 +102,9 @@ def save_todos(questions, answers):
 
 
 def run_questionnaire(config_file):
+    setup_directory_for_git_ref()
+    saved_answers = get_saved_answers()
+
     config = configparser.ConfigParser()
     config.read(config_file)
     questions = collections.OrderedDict()
@@ -83,20 +124,26 @@ def run_questionnaire(config_file):
             if not meets_condition(answers, question_options["only"]):
                 continue
 
+        saved_answer = saved_answers.get(question_name, "")
+
         prompt = question_options["prompt"]
         answer_type = question_options["answer_type"]
         if answer_type == constants.AnswerTypes.MULTIPLE_CHOICE:
             choices = question_options["choices"]
+            default_index = list(choices.keys()).index(saved_answer) if saved_answer else 0
             choice, _ = pick.pick(
-                list(choices.keys()), title=prompt, options_map_func=lambda choice_key: choices[choice_key]
+                list(choices.keys()),
+                title=prompt,
+                default_index=default_index,
+                options_map_func=lambda choice_key: choices[choice_key],
             )
             answers[question_name] = choice
         elif answer_type == constants.AnswerTypes.TEXT:
             print(f"{prompt}:")
-            answers[question_name] = read_line()
+            answers[question_name] = read_line(saved_answer)
         elif answer_type == constants.AnswerTypes.TODO:
             print(f"{prompt}:")
-            answers[question_name] = read_todo()
+            answers[question_name] = read_todo(saved_answer)
         else:
             raise Exception(f'Invalid answer type {question_options["answer_type"]}')
 
@@ -113,6 +160,7 @@ def run_questionnaire(config_file):
             answer = question_options["choices"][answer]
         print(f"    {answer}\n")
     save_todos(questions, answers)
+    save_answers(answers)
 
 
 if __name__ == "__main__":
