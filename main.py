@@ -22,7 +22,7 @@ def get_commit_info():
     config_reader = repo.config_reader()
     branch_name = repo.head.reference.name
     try:
-        author = reader.get_value("user", "name")
+        author = config_reader.get_value("user", "name")
         commit_id = next(repo.iter_commits(f"origin/{branch_name}", max_count=1, author=author))
         return branch_name, commit_id
     except:
