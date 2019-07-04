@@ -17,6 +17,18 @@ arg_parser.add_argument("task", choices=["question"])
 arg_parser.add_argument("--config", "-c", default=".assistant.ini")
 
 
+def get_commit_info():
+    repo = git.Repo(".")
+    config_reader = repo.config_reader()
+    branch_name = repo.head.reference.name
+    try:
+        author = reader.get_value("user", "name")
+        commit_id = next(repo.iter_commits(f"origin/{branch_name}", max_count=1, author=author))
+        return branch_name, commit_id
+    except:
+        return branch_name, "initial"
+
+
 def setup_directory_for_git_ref():
     repo = git.Repo(".")
     branch_name = repo.head.reference.name
@@ -30,9 +42,7 @@ def setup_directory_for_git_ref():
 
 
 def get_saved_answers():
-    repo = git.Repo(".")
-    branch_name = repo.head.reference.name
-    commit_id = repo.head.reference.commit.hexsha
+    branch_name, commit_id = get_commit_info()
     file_for_commit = f"{constants.ASSISTANT_STORE_DIR}/{branch_name}/{commit_id}"
     try:
         with open(file_for_commit, "r") as file:
@@ -42,9 +52,7 @@ def get_saved_answers():
 
 
 def save_answers(answers):
-    repo = git.Repo(".")
-    branch_name = repo.head.reference.name
-    commit_id = repo.head.reference.commit.hexsha
+    branch_name, commit_id = get_commit_info()
     file_for_commit = f"{constants.ASSISTANT_STORE_DIR}/{branch_name}/{commit_id}"
     with open(file_for_commit, "w+") as file:
         file.write(json.dumps(answers))
@@ -74,7 +82,7 @@ def read_todo(saved_todos=[]):
     items = []
     while True:
         print(f"\n{i}. ", end="")
-        saved_todo = saved_todos[i-1] if i <= len(saved_todos) else ["", True]
+        saved_todo = saved_todos[i - 1] if i <= len(saved_todos) else ["", True]
         prefill = saved_todo[0]
         item = read_line(prefill)
         if not item:
