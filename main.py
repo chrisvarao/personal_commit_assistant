@@ -117,6 +117,14 @@ def save_todos_from_answers(questions, answers):
         file.write(json.dumps(file_contents))
 
 
+def get_todos_for_commit():
+    branch_name, commit_id = get_commit_info()
+    file_for_commit = f"{constants.ASSISTANT_STORE_DIR}/{branch_name}/todos/{commit_id}"
+
+    with open(file_for_commit, "r") as file:
+        return json.JSONDecoder(object_pairs_hook=collections.OrderedDict).decode(file.read() or "{}")
+
+
 def run_questionnaire(config_file):
     setup_directory_for_git_ref()
     saved_answers = get_saved_answers()
@@ -177,6 +185,44 @@ def run_questionnaire(config_file):
         print(f"    {answer}\n")
     save_todos_from_answers(questions, answers)
     save_answers(answers)
+    run_todo()
+
+
+def run_todo_for_item(item, todos):
+    print(f"    {item}:")
+    result = []
+    for todo in todos:
+        choice, _ = pick.pick(
+            ["done", "not done"],
+            title=todo[0],
+        )
+        if choice == "not done":
+            result.append([todo[0], False])
+
+
+def run_todo_for_group(group, todos):
+    print(f"{group}:")
+    for item, for_item in todos.items():
+        todos[item] = run_todo_for_item(item, for_item)
+
+
+def run_todo_on_saved_list(todos):
+    result = []
+    for group, for_group in todos.items():
+        for item, for_item in for_group.items():
+            for todo in for_item:
+                choice, _ = pick.pick(
+                    ["not done", "done"],
+                    title=f"{group}:\n    {todo[0]}:",
+                )
+                if choice == "not done":
+                    result.append([todo[0], False])
+    return result
+
+
+def run_todo():
+    commit_todos = get_todos_for_commit()
+    print(run_todo_on_saved_list(commit_todos))
 
 
 if __name__ == "__main__":
