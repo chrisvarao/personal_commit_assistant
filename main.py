@@ -40,10 +40,18 @@ def setup_directory_for_git_ref():
     if not os.path.exists(branch_dir):
         os.mkdir(branch_dir)
 
+    answers_dir = f"{constants.ASSISTANT_STORE_DIR}/{branch_name}/answers"
+    if not os.path.exists(answers_dir):
+        os.mkdir(answers_dir)
+
+    todo_dir = f"{constants.ASSISTANT_STORE_DIR}/{branch_name}/todos"
+    if not os.path.exists(todo_dir):
+        os.mkdir(todo_dir)
+
 
 def get_saved_answers():
     branch_name, commit_id = get_commit_info()
-    file_for_commit = f"{constants.ASSISTANT_STORE_DIR}/{branch_name}/{commit_id}"
+    file_for_commit = f"{constants.ASSISTANT_STORE_DIR}/{branch_name}/answers/{commit_id}"
     try:
         with open(file_for_commit, "r") as file:
             return json.JSONDecoder(object_pairs_hook=collections.OrderedDict).decode(file.read() or "{}")
@@ -53,7 +61,7 @@ def get_saved_answers():
 
 def save_answers(answers):
     branch_name, commit_id = get_commit_info()
-    file_for_commit = f"{constants.ASSISTANT_STORE_DIR}/{branch_name}/{commit_id}"
+    file_for_commit = f"{constants.ASSISTANT_STORE_DIR}/{branch_name}/answers/{commit_id}"
     with open(file_for_commit, "w+") as file:
         file.write(json.dumps(answers))
 
@@ -82,19 +90,19 @@ def read_todo(saved_todos=[]):
     items = []
     while True:
         print(f"\n{i}. ", end="")
-        saved_todo = saved_todos[i - 1] if i <= len(saved_todos) else ["", True]
-        prefill = saved_todo[0]
+        saved_todo = saved_todos[i - 1] if i <= len(saved_todos) else ""
+        prefill = saved_todo
         item = read_line(prefill)
         if not item:
             break
-        default_index = 0 if saved_todo[1] else 1
-        done, _ = pick.pick(["yes", "no"], default_index=default_index, title=f'Is "{item}" complete?')
-        items.append((item, done == "yes"))
+        items.append(item)
         i += 1
     return items
 
 
-def save_todos(questions, answers):
+def save_todos_from_answers(questions, answers):
+    branch_name, commit_id = get_commit_info()
+    file_for_commit = f"{constants.ASSISTANT_STORE_DIR}/{branch_name}/todos/{commit_id}"
     file_contents = {}
     for question_name, question_options in questions.items():
         if question_options["answer_type"] != constants.AnswerTypes.TODO or question_name not in answers:
@@ -104,8 +112,8 @@ def save_todos(questions, answers):
         todo_group = file_contents[todo_group_key] = file_contents.get(todo_group_key, {})
         todo_for = todo_group[todo_for_key] = todo_group.get(todo_for_key, [])
         for item in answers[question_name]:
-            todo_for.append(list(item))
-    with open(".todo", "w+") as file:
+            todo_for.append([item, False])
+    with open(file_for_commit, "w+") as file:
         file.write(json.dumps(file_contents))
 
 
@@ -167,7 +175,7 @@ def run_questionnaire(config_file):
         if answer_type == constants.AnswerTypes.MULTIPLE_CHOICE:
             answer = question_options["choices"][answer]
         print(f"    {answer}\n")
-    save_todos(questions, answers)
+    save_todos_from_answers(questions, answers)
     save_answers(answers)
 
 
