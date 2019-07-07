@@ -27,8 +27,11 @@ def get_todos_for_commit():
     branch_name, commit_id = utils.get_commit_info()
     file_for_commit = f"{constants.ASSISTANT_STORE_DIR}/{branch_name}/todos/{commit_id}"
 
-    with open(file_for_commit, "r") as file:
-        return json.JSONDecoder(object_pairs_hook=collections.OrderedDict).decode(file.read() or "{}")
+    try:
+        with open(file_for_commit, "r") as file:
+            return json.JSONDecoder(object_pairs_hook=collections.OrderedDict).decode(file.read() or "{}")
+    except:
+        return collections.OrderedDict()
 
 
 def run_todo_on_saved_list(todos):
