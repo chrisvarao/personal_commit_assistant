@@ -7,31 +7,23 @@ from assistant import constants, utils
 
 
 def save_todos_from_answers(questions, answers):
-    branch_name, commit_id = utils.get_commit_info()
-    file_for_commit = f"{constants.ASSISTANT_STORE_DIR}/{branch_name}/todos/{commit_id}"
-    file_contents = collections.OrderedDict()
+    branch_name, _ = utils.get_commit_info()
+    branch_todos_file = f"{constants.ASSISTANT_STORE_DIR}/{branch_name}.todos.json"
+    todos = utils.read_file_as_ordered_dict(branch_todos_file)
     for question_name, question_options in questions.items():
         if question_options["answer_type"] != constants.AnswerTypes.TODO or question_name not in answers:
             continue
         todo_for_key = question_options.get("todo_for", "").format(**answers)
         todo_group_key = question_options.get("todo_group", "")
-        todo_group = file_contents[todo_group_key] = file_contents.get(todo_group_key, collections.OrderedDict())
+        todo_group = todos[todo_group_key] = todos.get(todo_group_key, collections.OrderedDict())
         todo_for = todo_group[todo_for_key] = todo_group.get(todo_for_key, [])
         for item in answers[question_name]:
             todo_for.append([item, False])
-    with open(file_for_commit, "w+") as file:
-        file.write(json.dumps(file_contents))
+    utils.update_saved_response(todos=todos)
 
 
 def get_todos_for_commit():
-    branch_name, commit_id = utils.get_commit_info()
-    file_for_commit = f"{constants.ASSISTANT_STORE_DIR}/{branch_name}/todos/{commit_id}"
-
-    try:
-        with open(file_for_commit, "r") as file:
-            return json.JSONDecoder(object_pairs_hook=collections.OrderedDict).decode(file.read() or "{}")
-    except:
-        return collections.OrderedDict()
+    return utils.get_saved_response().get("todos", collections.OrderedDict())
 
 
 def run_todo_on_saved_list(todos):
@@ -40,14 +32,17 @@ def run_todo_on_saved_list(todos):
         for item, for_item in for_group.items():
             result = []
             for todo in for_item:
-                choice, _ = pick.pick(["not done", "done"], title=f"{group}:\n    {todo[0]}:")
-                if choice == "not done":
-                    new_todos[group] = new_todos.get(group, collections.OrderedDict())
-                    new_todos[group][item] = new_todos[group].get(item, [])
-                    new_todos[group][item].append([todo[0], False])
+                default_index = 1 if todo[1] else 0
+                choice, _ = pick.pick(
+                    ["not done", "done"], title=f"{group}:\n    {todo[0]}:", default_index=default_index
+                )
+                new_todos[group] = new_todos.get(group, collections.OrderedDict())
+                new_todos[group][item] = new_todos[group].get(item, [])
+                new_todos[group][item].append([todo[0], choice == "done"])
     return new_todos
 
 
 def run_todo():
-    commit_todos = get_todos_for_commit()
-    commit_todos = run_todo_on_saved_list(commit_todos)
+    todos = get_todos_for_commit()
+    todos = run_todo_on_saved_list(todos)
+    utils.update_saved_response(todos=todos)

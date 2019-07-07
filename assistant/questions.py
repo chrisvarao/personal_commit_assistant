@@ -1,5 +1,4 @@
 import collections
-import configparser
 import json
 import os
 import platform
@@ -10,20 +9,11 @@ from assistant import constants, todos, utils
 
 
 def get_saved_answers():
-    branch_name, commit_id = utils.get_commit_info()
-    file_for_commit = f"{constants.ASSISTANT_STORE_DIR}/{branch_name}/answers/{commit_id}"
-    try:
-        with open(file_for_commit, "r") as file:
-            return json.JSONDecoder(object_pairs_hook=collections.OrderedDict).decode(file.read() or "{}")
-    except:
-        return collections.OrderedDict()
+    return utils.get_saved_response().get("answers", collections.OrderedDict())
 
 
 def save_answers(answers):
-    branch_name, commit_id = utils.get_commit_info()
-    file_for_commit = f"{constants.ASSISTANT_STORE_DIR}/{branch_name}/answers/{commit_id}"
-    with open(file_for_commit, "w+") as file:
-        file.write(json.dumps(answers))
+    utils.update_saved_response(answers=answers)
 
 
 def read_todo_question(saved_todos=[]):
@@ -53,11 +43,11 @@ def meets_condition(answers, condition):
 
 
 def run_questionnaire(config_file):
-    utils.setup_directory_for_git_ref()
+    utils.setup_response_files()
+    utils.setup_config_file(config_file)
     saved_answers = get_saved_answers()
 
-    config = configparser.ConfigParser()
-    config.read(config_file)
+    config = utils.get_config()
     questions = collections.OrderedDict()
     answers = collections.OrderedDict()
     for section in config.sections():
