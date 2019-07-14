@@ -6,9 +6,10 @@ import os
 import platform
 import readline
 import shutil
+import stat
 import sys
 
-from assistant import constants
+from assistant import constants, default_config
 
 
 _needs_fetch = True
@@ -124,3 +125,20 @@ def read_line(prefill=""):
         return input()
     finally:
         readline.set_startup_hook()
+
+def setup_pre_commit():
+    if os.path.exists(".git/hooks/run_personal_commit_assistant"):
+        return
+    with open(".assistant.ini", "w+") as config_file:
+        config_file.write(default_config.DEFAULT_CONFIG)
+    with open(".git/hooks/run_personal_commit_assistant", "w+") as script:
+        script.write("personal_commit_assistant question < /dev/tty")
+    os.chmod(".git/hooks/run_personal_commit_assistant", stat.S_IRWXU)
+    pre_commit_exists = os.path.exists(".git/hooks/pre-commit")
+    write_mode = "w" if pre_commit_exists else "a"
+    if pre_commit_exists:
+        shutil.copyfile(".git/hooks/pre-commit", ".git/hooks/pre-commit.copy")
+    with open(".git/hooks/pre-commit", write_mode) as pre_commit_script:
+        pre_commit_script.write("\n$(dirname $0)/run_personal_commit_assistant")
+    if not pre_commit_exists:
+        os.chmod(".git/hooks/pre-commit", stat.S_IRWXU)

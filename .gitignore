@@ -1,3 +1,6 @@
 .todo
 
 .assistant_store/*
+dist/*
+build/*
+*.egg-info/*
