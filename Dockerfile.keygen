@@ -1,0 +1,12 @@
+FROM alpine
+
+RUN apk update && apk add --update openssh-client
+
+VOLUME /keygen
+VOLUME /git/keys
+
+ENV PYTHONPATH "${PYTHONPATH}:/content"
+
+RUN ssh-keygen -q -t rsa -b 4096 -N '' -C "test@example.com" -f /id_rsa
+
+CMD cp /id_rsa.pub /git/keys && cp /id_rsa /keygen
