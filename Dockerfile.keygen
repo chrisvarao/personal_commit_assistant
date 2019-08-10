@@ -3,10 +3,12 @@ FROM alpine
 RUN apk update && apk add --update openssh-client
 
 VOLUME /keygen
-VOLUME /git/keys
 
-ENV PYTHONPATH "${PYTHONPATH}:/content"
+COPY ["all_users", "/"]
+COPY ["generate_all_user_keys.sh", "/"]
 
-RUN ssh-keygen -q -t rsa -b 4096 -N '' -C "test@example.com" -f /id_rsa
+RUN mkdir /keys
+RUN chmod +x /generate_all_user_keys.sh
+RUN /generate_all_user_keys.sh
 
-CMD cp /id_rsa.pub /git/keys && cp /id_rsa /keygen
+CMD cp /keys/* /keygen

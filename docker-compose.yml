@@ -1,13 +1,13 @@
 version: '3'
 services:
   git:
-    image: jkarlos/git-server-docker
-    restart: always
+    build:
+      context: .
+      dockerfile: Dockerfile.git
     ports:
       - "2222:22"
     volumes:
-    - keys:/git-server/keys
-    - repos:/git-server/repos
+    - keygen:/keygen
     depends_on:
     - "keygen"
   keygen:
@@ -16,14 +16,11 @@ services:
       dockerfile: Dockerfile.keygen
     volumes:
     - keygen:/keygen
-    - keys:/git/keys
   test:
     build:
       context: .
     volumes:
     - keygen:/keygen
-    - keys:/git/keys
-    - repos:/git/repos
     - ./assistant:/content/assistant
     - ./scripts:/content/scripts
     depends_on:
