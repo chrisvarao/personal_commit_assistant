@@ -13,7 +13,7 @@ RUN cd /tmp \
 
 WORKDIR /content
 
-VOLUME /keygen
+VOLUME /keys
 VOLUME /content/assistant
 VOLUME /content/scripts
 
@@ -26,5 +26,5 @@ RUN mkdir /repos
 RUN git config --global user.email "test@example.com"
 RUN git config --global user.name "Test Testerson"
 
-CMD eval "$(ssh-agent -s)" && ssh-add /keygen/test1 && mkdir -p ~/.ssh && ssh-keyscan git > ~/.ssh/known_hosts && \
+CMD while [ ! -f /keys/test1 ]; do sleep 1; done && eval "$(ssh-agent -s)" && ssh-add /keys/test1 && mkdir -p ~/.ssh && ssh-keyscan git > ~/.ssh/known_hosts && \
     ssh test1@git "init myrepo.git" && cd /repos && git clone ssh://test1@git/~/myrepo.git && cd myrepo && tail -f /dev/null

@@ -1,32 +1,18 @@
 version: '3'
 services:
   git:
-    build:
-      context: .
-      dockerfile: Dockerfile.git
-    ports:
-      - "2222:22"
+    image: chrisrao/git-test-server
     volumes:
-    - keygen:/keygen
-    depends_on:
-    - "keygen"
-  keygen:
-    build:
-      context: .
-      dockerfile: Dockerfile.keygen
-    volumes:
-    - keygen:/keygen
+    - ./all_users:/git-test-server-users/users
+    - keys:/git-test-server-keys
   test:
     build:
       context: .
     volumes:
-    - keygen:/keygen
+    - keys:/keys
     - ./assistant:/content/assistant
     - ./scripts:/content/scripts
     depends_on:
-    - "keygen"
     - "git"
 volumes:
-  keygen:
   keys:
-  repos:
