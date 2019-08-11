@@ -59,11 +59,11 @@ def test_setup_pre_commit(repo_name):
         utils.setup_pre_commit()
         assert os.path.exists(".git/hooks/run_personal_commit_assistant")
         pre_commit_contents = None
-        with open('.git/hooks/pre-commit', "r") as file:
+        with open(".git/hooks/pre-commit", "r") as file:
             pre_commit_contents = file.read()
 
         utils.setup_pre_commit()
-        with open('.git/hooks/pre-commit', "r") as file:
+        with open(".git/hooks/pre-commit", "r") as file:
             assert pre_commit_contents == file.read()
 
 
