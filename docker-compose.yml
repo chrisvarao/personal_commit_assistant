@@ -12,6 +12,7 @@ services:
     - keys:/keys
     - ./assistant:/content/assistant
     - ./scripts:/content/scripts
+    - ./tests:/content/tests
     depends_on:
     - "git"
 volumes:

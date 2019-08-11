@@ -1,6 +1,6 @@
 FROM alpine
 
-RUN apk update && apk add --update git python3 openssh-client
+RUN apk update && apk add --update git python3 python3-dev libffi-dev libressl-dev openssh-client build-base
 RUN python3 -m ensurepip
 RUN pip3 install 'pipenv>=8.3.0,<8.4.0'
 
@@ -16,15 +16,15 @@ WORKDIR /content
 VOLUME /keys
 VOLUME /content/assistant
 VOLUME /content/scripts
+VOLUME /content/tests
 
 ENV PYTHONPATH "${PYTHONPATH}:/content"
 
 RUN echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
 RUN eval "$(ssh-agent -s)"
-RUN mkdir /repos
+RUN mkdir /content/repos
 
 RUN git config --global user.email "test@example.com"
 RUN git config --global user.name "Test Testerson"
 
-CMD while [ ! -f /keys/test1 ]; do sleep 1; done && eval "$(ssh-agent -s)" && ssh-add /keys/test1 && mkdir -p ~/.ssh && ssh-keyscan git > ~/.ssh/known_hosts && \
-    ssh test1@git "init myrepo.git" && cd /repos && git clone ssh://test1@git/~/myrepo.git && cd myrepo && tail -f /dev/null
+ENTRYPOINT ["/content/tests/test_setup.sh"]

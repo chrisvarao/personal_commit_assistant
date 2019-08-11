@@ -4,10 +4,13 @@ verify_ssl = true
 name = 'pypi'
 
 [packages]
-black = "*"
 pick = "*"
 GitPython = "*"
+
+[dev-packages]
+black = "*"
 pytest = "*"
+paramiko = "*"
 
 [requires]
 python_version = "3.6"
