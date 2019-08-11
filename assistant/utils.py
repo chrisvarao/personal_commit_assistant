@@ -126,11 +126,15 @@ def read_line(prefill=""):
     finally:
         readline.set_startup_hook()
 
+
+def init_assistant_file():
+    with open(".assistant.ini", "w+") as config_file:
+        config_file.write(default_config.DEFAULT_CONFIG)
+
+
 def setup_pre_commit():
     if os.path.exists(".git/hooks/run_personal_commit_assistant"):
         return
-    with open(".assistant.ini", "w+") as config_file:
-        config_file.write(default_config.DEFAULT_CONFIG)
     with open(".git/hooks/run_personal_commit_assistant", "w+") as script:
         script.write("personal_commit_assistant question < /dev/tty")
     os.chmod(".git/hooks/run_personal_commit_assistant", stat.S_IRWXU)

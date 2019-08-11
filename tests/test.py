@@ -54,11 +54,9 @@ def repo_name():
     return name
 
 
-def test_initialization(repo_name):
-    assert repo_name is not None
+def test_setup_pre_commit(repo_name):
     with _as_git_user("test1", repo_name):
         utils.setup_pre_commit()
-        assert os.path.exists(".assistant.ini")
         assert os.path.exists(".git/hooks/run_personal_commit_assistant")
         pre_commit_contents = None
         with open('.git/hooks/pre-commit', "r") as file:
@@ -67,3 +65,9 @@ def test_initialization(repo_name):
         utils.setup_pre_commit()
         with open('.git/hooks/pre-commit', "r") as file:
             assert pre_commit_contents == file.read()
+
+
+def test_init_assistant_file(repo_name):
+    with _as_git_user("test1", repo_name):
+        utils.init_assistant_file()
+        assert os.path.exists(".assistant.ini")

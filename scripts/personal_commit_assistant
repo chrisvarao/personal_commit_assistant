@@ -19,4 +19,8 @@ elif args.task == "clear":
 elif args.task == "rotate":
     utils.rotate_files()
 elif args.task == "init":
+    utils.init_assistant_file()
+elif args.task == "create-hook":
     utils.setup_pre_commit()
+elif args.task == "destroy":
+    utils.remove_assistant()
