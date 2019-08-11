@@ -36,15 +36,17 @@ def meets_condition(answers, condition):
     question_name = tokens[0]
     conditional_op = tokens[1]
     answer = tokens[2]
+    if question_name not in answers:
+        raise Exception(f"The question '{question_name}' hasn't been asked.")
     if conditional_op == constants.ConditionOps.EQUALS:
         return answers[question_name] == answer
     else:
-        raise Exception(f"Invalid conditional operator {conditional_op}")
+        raise Exception(f"Invalid conditional operator {conditional_op}.")
 
 
 def run_questionnaire(config_file):
     if not os.path.exists(config_file):
-        raise Exception(f"Assistant config file '{config_file}' doesn't exist")
+        raise Exception(f"Assistant config file '{config_file}' doesn't exist.")
 
     utils.setup_response_files()
     utils.setup_config_file(config_file)
@@ -61,7 +63,7 @@ def run_questionnaire(config_file):
         elif section_type == "choices":
             questions[tokens[1]]["choices"] = collections.OrderedDict(config.items(section))
         else:
-            raise Exception(f"Invalid section name {section}")
+            raise Exception(f"Invalid section name {section}.")
 
     for question_name, question_options in questions.items():
         if "only" in question_options:
@@ -89,7 +91,7 @@ def run_questionnaire(config_file):
             print(f"{prompt}:")
             answers[question_name] = read_todo_question(saved_answer)
         else:
-            raise Exception(f'Invalid answer type {question_options["answer_type"]}')
+            raise Exception(f'Invalid answer type {question_options["answer_type"]}.')
 
     if platform.system() == "Linux":
         os.system("clear")

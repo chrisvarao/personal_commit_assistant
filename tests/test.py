@@ -1,7 +1,10 @@
+import collections
+import configparser
 from contextlib import contextmanager
 import os
 import random
 import string
+from unittest import mock
 
 import git
 import paramiko
@@ -77,4 +80,31 @@ def test_question_without_script_raises_error(repo_name):
     with _as_git_user("test1", repo_name):
         with pytest.raises(Exception) as e_info:
             questions.run_questionnaire(".assistant.ini")
-        assert e_info.value.args[0] == "Assistant config file '.assistant.ini' doesn't exist"
+        assert e_info.value.args[0] == "Assistant config file '.assistant.ini' doesn't exist."
+
+
+def test_question_condition_invalid_operator(repo_name):
+    config = configparser.ConfigParser()
+    config["question.commit_kind"] = collections.OrderedDict(
+        {"prompt": "What kind of commit is this?", "answer_type": "multiple_choice"}
+    )
+
+    config["choices.commit_kind"] = collections.OrderedDict(
+        {"bug_fix": "bug fix", "new_functionality": "new functionality"}
+    )
+
+    config["question.bug_description"] = collections.OrderedDict(
+        {
+            "prompt": "What bug is being fixed?",
+            "only": "commit_kind.fouriertransformequals.bug_fix",
+            "answer_type": "text",
+        }
+    )
+
+    with _as_git_user("test1", repo_name):
+        with open(".assistant.ini", "w+") as config_file:
+            config.write(config_file)
+        with pytest.raises(Exception) as e_info:
+            with mock.patch("pick.pick", return_value=("bug_fix", None)):
+                questions.run_questionnaire(".assistant.ini")
+        assert e_info.value.args[0] == "Invalid conditional operator fouriertransformequals."
