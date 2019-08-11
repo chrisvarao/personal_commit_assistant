@@ -71,3 +71,10 @@ def test_init_assistant_file(repo_name):
     with _as_git_user("test1", repo_name):
         utils.init_assistant_file()
         assert os.path.exists(".assistant.ini")
+
+
+def test_question_without_script_raises_error(repo_name):
+    with _as_git_user("test1", repo_name):
+        with pytest.raises(Exception) as e_info:
+            questions.run_questionnaire(".assistant.ini")
+        assert e_info.value.args[0] == "Assistant config file '.assistant.ini' doesn't exist"

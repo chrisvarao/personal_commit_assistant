@@ -43,6 +43,9 @@ def meets_condition(answers, condition):
 
 
 def run_questionnaire(config_file):
+    if not os.path.exists(config_file):
+        raise Exception(f"Assistant config file '{config_file}' doesn't exist")
+
     utils.setup_response_files()
     utils.setup_config_file(config_file)
     saved_answers = get_saved_answers()
