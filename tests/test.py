@@ -108,3 +108,22 @@ def test_question_condition_invalid_operator(repo_name):
             with mock.patch("pick.pick", return_value=("bug_fix", None)):
                 questions.run_questionnaire(".assistant.ini")
         assert e_info.value.args[0] == "Invalid conditional operator fouriertransformequals."
+
+
+def test_question_condition_unasked_question(repo_name):
+    config = configparser.ConfigParser()
+    config["question.bug_description"] = collections.OrderedDict(
+        {
+            "prompt": "What bug is being fixed?",
+            "only": "commit_kind.equals.bug_fix",
+            "answer_type": "text",
+        }
+    )
+
+    with _as_git_user("test1", repo_name):
+        with open(".assistant.ini", "w+") as config_file:
+            config.write(config_file)
+        with pytest.raises(Exception) as e_info:
+            with mock.patch("pick.pick", return_value=("bug_fix", None)):
+                questions.run_questionnaire(".assistant.ini")
+        assert e_info.value.args[0] == "The question 'commit_kind' hasn't been asked."
