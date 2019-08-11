@@ -59,3 +59,4 @@ def test_initialization(repo_name):
     with _as_git_user("test1", repo_name):
         utils.setup_pre_commit()
         assert os.path.exists(".assistant.ini")
+        assert os.path.exists(".git/hooks/run_personal_commit_assistant")
