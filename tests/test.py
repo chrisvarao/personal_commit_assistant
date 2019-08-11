@@ -7,6 +7,8 @@ import git
 import paramiko
 import pytest
 
+from assistant import questions, todos, utils
+
 
 REPOS_DIR = "/content/repos"
 
@@ -18,12 +20,16 @@ def _random_string(string_length=10):
 
 
 @contextmanager
-def _as_git_user(user):
+def _as_git_user(user, repo_name):
+    user_repo_path = os.path.join(REPOS_DIR, f"{user}_{repo_name}")
     init_ssh_command = os.environ.get("GIT_SSH_COMMAND")
+    init_dir = os.getcwd()
     try:
         os.environ["GIT_SSH_COMMAND"] = f"ssh -i /keys/{user}"
+        os.chdir(user_repo_path)
         yield
     finally:
+        os.chdir(init_dir)
         if init_ssh_command is None:
             del os.environ["GIT_SSH_COMMAND"]
         else:
@@ -42,11 +48,14 @@ def repo_name():
 
     for user in ["test1", "test2"]:
         user_repo_path = os.path.join(REPOS_DIR, f"{user}_{name}")
-        with _as_git_user(user):
-            git.Repo.clone_from(f"ssh://{user}@git/git/data/users/test1/{name}.git", user_repo_path)
+        os.environ["GIT_SSH_COMMAND"] = f"ssh -i /keys/{user}"
+        git.Repo.clone_from(f"ssh://{user}@git/git/data/users/test1/{name}.git", user_repo_path)
 
     return name
 
 
-def test_something(repo_name):
+def test_initialization(repo_name):
     assert repo_name is not None
+    with _as_git_user("test1", repo_name):
+        utils.setup_pre_commit()
+        assert os.path.exists(".assistant.ini")
