@@ -11,6 +11,4 @@ ssh-add /keys/test2
 mkdir -p ~/.ssh
 ssh-keyscan git > ~/.ssh/known_hosts
 
-python3 /tests/test.py
-
 tail -f /dev/null
