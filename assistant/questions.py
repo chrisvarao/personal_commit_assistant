@@ -93,17 +93,5 @@ def run_questionnaire(config_file):
         else:
             raise Exception(f'Invalid answer type {question_options["answer_type"]}.')
 
-    if platform.system() == "Linux":
-        os.system("clear")
-    else:
-        os.system("cls")
-
-    for question_name, answer in answers.items():
-        question_options = questions[question_name]
-        answer_type = question_options["answer_type"]
-        print(f'{question_options["prompt"]}:\n')
-        if answer_type == constants.AnswerTypes.MULTIPLE_CHOICE:
-            answer = question_options["choices"][answer]
-        print(f"    {answer}\n")
     todos.save_todos_from_answers(questions, answers)
     save_answers(answers)

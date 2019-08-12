@@ -1,6 +1,7 @@
 import collections
 import configparser
 from contextlib import contextmanager
+import json
 import os
 import random
 import string
@@ -83,6 +84,77 @@ def test_question_without_script_raises_error(repo_name):
         assert e_info.value.args[0] == "Assistant config file '.assistant.ini' doesn't exist."
 
 
+def test_question_condition_valid_operator(repo_name):
+    config = configparser.ConfigParser()
+    config["question.commit_kind"] = collections.OrderedDict(
+        {"prompt": "What kind of commit is this?", "answer_type": "multiple_choice"}
+    )
+
+    config["choices.commit_kind"] = collections.OrderedDict(
+        {"bug_fix": "bug fix", "new_functionality": "new functionality"}
+    )
+
+    config["question.bug_description"] = collections.OrderedDict(
+        {"prompt": "What bug is being fixed?", "only": "commit_kind.equals.bug_fix", "answer_type": "text"}
+    )
+
+    with _as_git_user("test1", repo_name):
+        with open(".assistant.ini", "w+") as config_file:
+            config.write(config_file)
+        with mock.patch("pick.pick", return_value=("bug_fix", None)), mock.patch(
+            "assistant.utils.read_line", return_value="a big bug"
+        ):
+            questions.run_questionnaire(".assistant.ini")
+        with open(".assistant_store/master.current_responses.json", "r") as response_file:
+            assert json.loads(response_file.read()) == {
+                "commit_id": "initial",
+                "answers": {"bug_description": "a big bug", "commit_kind": "bug_fix"},
+            }
+
+
+def test_todo_question(repo_name):
+    config = configparser.ConfigParser()
+
+    config["question.bug_description"] = collections.OrderedDict(
+        {"prompt": "What bug is being fixed?", "answer_type": "text"}
+    )
+
+    config["question.bug_fix_unit_tests"] = {
+        "prompt": "What unit tests are needed?",
+        "answer_type": "todo",
+        "todo_group": "Unit tests for bug fixes",
+        "todo_for": 'Bug fix "{bug_description}"',
+    }
+
+    with _as_git_user("test1", repo_name):
+        with open(".assistant.ini", "w+") as config_file:
+            config.write(config_file)
+        with mock.patch("pick.pick", return_value=("bug_fix", None)), mock.patch(
+            "assistant.utils.read_line", side_effect=["a big bug", "test for a", "test for b", ""]
+        ):
+            questions.run_questionnaire(".assistant.ini")
+        with open(".assistant_store/master.current_responses.json", "r") as response_file:
+            assert json.loads(response_file.read()) == {
+                "commit_id": "initial",
+                "answers": {"bug_description": "a big bug", "bug_fix_unit_tests": ["test for a", "test for b"]},
+                "todos": {
+                    "Unit tests for bug fixes": {'Bug fix "a big bug"': [["test for a", False], ["test for b", False]]}
+                },
+            }
+
+        with mock.patch("pick.pick", side_effect=[("done", None), ("not done", None)]):
+            todos.run_todo()
+
+        with open(".assistant_store/master.current_responses.json", "r") as response_file:
+            assert json.loads(response_file.read()) == {
+                "commit_id": "initial",
+                "answers": {"bug_description": "a big bug", "bug_fix_unit_tests": ["test for a", "test for b"]},
+                "todos": {
+                    "Unit tests for bug fixes": {'Bug fix "a big bug"': [["test for a", True], ["test for b", False]]}
+                },
+            }
+
+
 def test_question_condition_invalid_operator(repo_name):
     config = configparser.ConfigParser()
     config["question.commit_kind"] = collections.OrderedDict(
@@ -113,11 +185,7 @@ def test_question_condition_invalid_operator(repo_name):
 def test_question_condition_unasked_question(repo_name):
     config = configparser.ConfigParser()
     config["question.bug_description"] = collections.OrderedDict(
-        {
-            "prompt": "What bug is being fixed?",
-            "only": "commit_kind.equals.bug_fix",
-            "answer_type": "text",
-        }
+        {"prompt": "What bug is being fixed?", "only": "commit_kind.equals.bug_fix", "answer_type": "text"}
     )
 
     with _as_git_user("test1", repo_name):
