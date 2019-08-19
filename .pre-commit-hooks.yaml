@@ -3,3 +3,4 @@
   description: Personal Commit Assistant.
   entry: scripts/personal_commit_assistant question
   language: python
+  language_version: python3
