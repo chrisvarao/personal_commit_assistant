@@ -1,6 +1,6 @@
 - id: personal-commit-assistant
   name: Personal Commit Assistant
   description: Personal Commit Assistant.
-  entry: scripts/personal_commit_assistant question
+  entry: personal_commit_assistant
   language: python
   language_version: python3

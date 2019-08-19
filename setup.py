@@ -14,7 +14,9 @@ setuptools.setup(
     url="https://github.com/chrisvarao/personal_commit_assistant",
     install_requires=["pick>=0.6.4", "GitPython>=2.1.11"],
     packages=setuptools.find_packages(),
-    scripts=['scripts/personal_commit_assistant'],
+    console_scripts={
+        "personal_commit_assistant=personal_commit_assistant"
+    },
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
