@@ -1,0 +1,4 @@
+- id: personal-commit-assistant
+  name: Personal Commit Assistant
+  description: Personal Commit Assistant.
+  entry: personal_commit_assistant question
